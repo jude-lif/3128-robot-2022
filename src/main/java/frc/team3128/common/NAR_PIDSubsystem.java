@@ -2,11 +2,12 @@ package frc.team3128.common;
 
 import edu.wpi.first.wpilibj2.command.PIDSubsystem;
 import edu.wpi.first.wpilibj.controller.PIDController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 abstract public class NAR_PIDSubsystem extends PIDSubsystem{
     
     // number of successful checks
-    private int plateauCount = 0;
+    public int plateauCount = 0;
     // threshold value to which plateauCount must reach to be ready
     private int plateauThreshold;
 
@@ -41,14 +42,18 @@ abstract public class NAR_PIDSubsystem extends PIDSubsystem{
      * the RPM drifts from the setpoint, set plateau count back to zero.
      * @param setpoint The desired setpoint RPM for the PID Loop
      */
-    public void useOutput(double setpoint) {
+    public void countPlateau(double setpoint) {
+        SmartDashboard.putBoolean("NAR_PIDSubsystem atSetpoint", m_controller.atSetpoint());
         if (getController().atSetpoint() && (setpoint != 0)) {
             plateauCount++;
         } else {
             plateauCount = 0;
         }
     }
-
+ 
+    public boolean narSet(){
+        return m_controller.atSetpoint();
+    }
     /**
      * Set plateau counter back to 0 when restarted PID loop
      */

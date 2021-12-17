@@ -35,6 +35,16 @@ public class RobotContainer {
 
     private CommandScheduler m_commandScheduler = CommandScheduler.getInstance();
     private Command auto;
+    private Command trajectory;
+
+    private Command runIntake, stopIntake;
+    private Command alignShoot, stopAlignShoot;
+    private Command armDown, armUp, stopArm;
+    private Command climberDown, climberUp, stopClimber;
+
+    private boolean driveInverted = false;
+
+    private boolean debug = false;
 
     public RobotContainer() {
 
@@ -54,8 +64,8 @@ public class RobotContainer {
 
         shooterLimelight.setLEDMode(LEDMode.ON);
 
-        m_commandScheduler.setDefaultCommand(m_drive, new ArcadeDrive(m_drive, m_rightStick::getY, m_rightStick::getTwist, m_rightStick::getThrottle));
-        m_commandScheduler.setDefaultCommand(m_hopper, new HopperDefault(m_hopper, m_shooter::atSetpoint));
+        m_commandScheduler.setDefaultCommand(m_drive, new ArcadeDrive(m_drive, m_rightStick::getY, m_rightStick::getTwist, m_rightStick::getThrottle, this::getDriveInverted));
+        m_commandScheduler.setDefaultCommand(m_hopper, new HopperDefault(m_hopper, m_shooter::atSetpoint, m_sidekick::atSetpoint));
 
         configureButtonBindings();
         dashboardInit();
@@ -74,14 +84,25 @@ public class RobotContainer {
         m_rightStick.getButton(9).whenActive(new RunCommand(m_intake::moveArmDown, m_intake));
         
         // right button 10: move arm up
-        m_rightStick.getButton(10).whenActive(new RunCommand(m_intake::moveArmUp, m_intake));
+        m_rightStick.getButton(10).whenPressed(armUp)
+                                .whenReleased(stopArm);
+
+        // left trigger: reverse drive
+        m_leftStick.getButton(1).whenPressed(() -> driveInverted = !driveInverted);
 
         // left button 7: move climber up
         m_leftStick.getButton(7).whenActive(new RunCommand(m_climber::moveClimberUp, m_climber));
 
         // left button 8: move climber down
-        m_leftStick.getButton(8).whenActive(new RunCommand(m_climber::moveClimberDown, m_climber));
-        
+        m_leftStick.getButton(8).whenPressed(climberDown)
+                                .whenReleased(stopClimber);
+
+        // left button 9: turn LED on
+        m_leftStick.getButton(9).whenPressed(shooterLimelight::turnLEDOn);
+
+        // left button 10: turn LED off
+        m_leftStick.getButton(10).whenPressed(shooterLimelight::turnLEDOff);
+
     }
 
     private void dashboardInit() {
@@ -94,6 +115,57 @@ public class RobotContainer {
         SmartDashboard.putData(m_intake);
         SmartDashboard.putData(m_climber);
 
+        if(debug) {
+            SmartDashboard.putNumber("Left Stick Raw X", m_leftStick.getX());
+            SmartDashboard.putNumber("Left Stick Raw Y", m_leftStick.getY());
+            SmartDashboard.putNumber("Left Stick Raw Z", m_leftStick.getZ());
+            SmartDashboard.putNumber("Left Stick Raw Twist", m_leftStick.getTwist());
+            SmartDashboard.putNumber("Left Stick Raw Throttle", m_leftStick.getThrottle());
+
+            SmartDashboard.putNumber("Right Stick Raw X", m_rightStick.getX());
+            SmartDashboard.putNumber("Right Stick Raw Y", m_rightStick.getY());
+            SmartDashboard.putNumber("Right Stick Raw Z", m_rightStick.getZ());
+            SmartDashboard.putNumber("Right Stick Raw Twist", m_rightStick.getTwist());
+            SmartDashboard.putNumber("Right Stick Raw Throttle", m_rightStick.getThrottle());
+        }
+
+    }
+
+    private void initAutos() {
+        runIntake = new RunCommand(m_intake::runIntake, m_intake);
+        stopIntake = new RunCommand(m_intake::stopIntake, m_intake);
+        
+        alignShoot = new ParallelCommandGroup(new CmdShoot(m_shooter, m_sidekick, ShooterState.MID_RANGE), new CmdAlign(m_drive, shooterLimelight));
+        stopAlignShoot = new ParallelCommandGroup(new RunCommand(m_shooter::stopShoot, m_shooter), new InstantCommand(shooterLimelight::turnLEDOff));
+
+        armDown = new RunCommand(m_intake::moveArmDown, m_intake);
+        armUp = new RunCommand(m_intake::moveArmUp, m_intake);
+        stopArm = new RunCommand(m_intake::stopArm, m_intake);
+
+        climberUp = new RunCommand(m_climber::moveClimberUp, m_climber);
+        climberDown = new RunCommand(m_climber::moveClimberDown, m_climber);
+        stopClimber = new RunCommand(m_climber::stopClimber, m_climber);
+
+        trajectory = new RamseteCommand(Trajectories.trajectorySimple, 
+                                        m_drive::getPose,
+                                        new RamseteController(Constants.DriveConstants.RAMSETE_B, Constants.DriveConstants.RAMSETE_ZETA),
+                                        new SimpleMotorFeedforward(Constants.DriveConstants.kS,
+                                                                    Constants.DriveConstants.kV,
+                                                                    Constants.DriveConstants.kA),
+                                        Constants.DriveConstants.DRIVE_KINEMATICS,
+                                        m_drive::getWheelSpeeds,
+                                        new PIDController(Constants.DriveConstants.RAMSETE_KP, 0, 0),
+                                        new PIDController(Constants.DriveConstants.RAMSETE_KP, 0, 0),
+                                        m_drive::tankDriveVolts,
+                                        m_drive)
+                                        .andThen(() -> m_drive.stop(), m_drive)
+                                        .andThen(() -> SmartDashboard.putNumber("End auto heading", m_drive.getHeading()));
+
+        auto = new AutoSimple(m_shooter, m_sidekick, m_drive, shooterLimelight, m_intake, trajectory);
+    }
+
+    private boolean getDriveInverted() {
+        return driveInverted;
     }
 
     public void stopDrivetrain() {

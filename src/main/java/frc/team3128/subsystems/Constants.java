@@ -2,6 +2,7 @@ package frc.team3128.subsystems;
 
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 
+import edu.wpi.first.wpilibj.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.wpilibj.system.LinearSystem;
 import edu.wpi.first.wpilibj.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.system.plant.LinearSystemId;
@@ -12,7 +13,7 @@ public class Constants {
 
     public static class ShooterConstants {
 
-        public static final double SHOOTER_PID_kP = 1.24e-7;
+        public static final double SHOOTER_PID_kP = 1.24e-7; //1.24e-7
         public static final double SHOOTER_PID_kI = 0;
         public static final double SHOOTER_PID_kD = 0;
         public static final double SHOOTER_PID_kF = 0;
@@ -21,13 +22,13 @@ public class Constants {
         public static final int RIGHT_SHOOTER_ID = 13; //Right Shooter Motor
 
         public static final int PLATEAU_COUNT = 25; //Number of checks at correct RPM to shoot
-        public static final double THRESHOLD_PERCENT = 0.05; //Maximum Percent Error in RPM to still shoot
+        public static final double THRESHOLD_PERCENT = 0.1; //0.05; //Maximum Percent Error in RPM to still shoot
         public static final double RPM_THRESHOLD_PERCENT = 0.05;
         public static final double RPM_THRESHOLD_PERCENT_MAX = 0.1;
         public static final double TIME_TO_MAX_THRESHOLD = 5;
 
         public static final double SHOOTER_KS = 0.711; //Static gain in PID Feed Forward
-        public static final double SHOOTER_KV = 0.00163; //Velocity gain in PID Feed Forward
+        public static final double SHOOTER_KV = 0.00176; //0.00163; //Velocity gain in PID Feed Forward
         public static final double SHOOTER_KA = 0.0349; //Acceleration gain PID Feed Forward
 
         // There are other better ways of doing this, need to use DCU 
@@ -72,8 +73,6 @@ public class Constants {
     public static class DriveConstants {
 
         // Sim constants, TODO: move to new class
-
-        // TODO: Get actual kv, ka
         public static final DCMotor GEARBOX = DCMotor.getFalcon500(4); 
         public static final LinearSystem<N2, N2, N2> DRIVE_CHAR = 
         LinearSystemId.identifyDrivetrainSystem(
@@ -83,16 +82,28 @@ public class Constants {
             0.5//0.3 // kaVoltSecondsSquaredPerRadian
         );
         public static final double DRIVE_GEARING = 8;
-        public static final double WHEEL_RADIUS_METERS = 0.0508; 
+        public static final double WHEEL_RADIUS_METERS = 0.0508;
+
         public static final int DRIVE_MOTOR_LEFT_LEADER_ID = 0;
         public static final int DRIVE_MOTOR_LEFT_FOLLOWER_ID = 1;
         public static final int DRIVE_MOTOR_RIGHT_LEADER_ID = 2;
         public static final int DRIVE_MOTOR_RIGHT_FOLLOWER_ID = 3;
 
-        public static final Boolean GYRO_REVERSED = false;
+        public static final boolean GYRO_REVERSED = false;
         public static final double TRACK_WIDTH_METERS = 0.66;
         public static final double ENCODER_RESOLUTION_PER_ROTATION = 2048;
-        public static final double ENCODER_DISTANCE_PER_MARK = WHEEL_RADIUS_METERS * 2 / ENCODER_RESOLUTION_PER_ROTATION;
+        public static final double ENCODER_DISTANCE_PER_MARK = WHEEL_RADIUS * 2 * Math.PI / ENCODER_RESOLUTION_PER_ROTATION;
+
+        public static final double ARCADE_DRIVE_TURN_MULT = -0.6; //-0.7
+
+        public static final double kS = 0.8; // 0.73; // volts
+        public static final double kV = 0.5; // 0.571; // volt*seconds/meter
+        public static final double kA = 0.05; // 0.013; // volt*seconds^2/meter
+
+        public static final double MAX_DRIVE_VOLTAGE = 11; // volts (hopefully you could figure this out)
+        public static final double RAMSETE_B = 2;
+        public static final double RAMSETE_ZETA = 0.7;
+        public static final double RAMSETE_KP = 0.5; // I think Tyler just took this number and ran with it
 
     }
 
@@ -102,8 +113,9 @@ public class Constants {
         public static final int BRUSH_MOTOR_2_ID = 33;
         public static final int INTAKE_MOTOR_ID = 4;
 
-        public static final int TOP_LIMIT_SWITCH_ID = 2;
-        public static final int BOTTOM_LIMIT_SWITCH_ID = 3;
+        //Chech these, for some reason Nathan had them as 0 and 1
+        public static final int TOP_LIMIT_SWITCH_ID = 0;
+        public static final int BOTTOM_LIMIT_SWITCH_ID = 1;
 
         public static final double INTAKE_MOTOR_POWER = 0.6;
         public static final double BRUSH_MOTOR_POWER = 0.3;
